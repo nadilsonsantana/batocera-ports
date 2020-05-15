@@ -123,6 +123,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <None Include="Resources\configgen-defaults-32.yml" />
     <None Include="Resources\configgen-defaults.yml" />
   </ItemGroup>
   <ItemGroup>
