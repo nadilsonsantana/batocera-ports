@@ -31,7 +31,13 @@ namespace emulatorLauncher
         private static void EnsureCache()
         {
             if (_ymlSystemsCache == null)
-                _ymlSystemsCache = new SimpleYml<YmlSystem>(Encoding.UTF8.GetString(Properties.Resources.configgen_defaults));
+                if (Environment.Is64BitOperatingSystem) {
+                    _ymlSystemsCache = new SimpleYml<YmlSystem>(Encoding.UTF8.GetString(Properties.Resources.configgen_defaults));
+                } else
+                {
+                    _ymlSystemsCache = new SimpleYml<YmlSystem>(Encoding.UTF8.GetString(Properties.Resources.configgen_defaults_32));
+                }
+               
         }
 
         private static SimpleYml<YmlSystem> _ymlSystemsCache;

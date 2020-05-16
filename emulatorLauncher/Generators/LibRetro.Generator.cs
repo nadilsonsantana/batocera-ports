@@ -15,7 +15,13 @@ namespace emulatorLauncher.libRetro
 
         public LibRetroGenerator()
         {
-            RetroarchPath = AppConfig.GetFullPath("retroarch");
+            if(Environment.Is64BitOperatingSystem)
+            {
+                RetroarchPath = AppConfig.GetFullPath("retroarch");
+            } else
+            {
+                RetroarchPath = AppConfig.GetFullPath("retroarch32");
+            }
 
             RetroarchCorePath = AppConfig.GetFullPath("retroarch.cores");
             if (string.IsNullOrEmpty(RetroarchCorePath))
