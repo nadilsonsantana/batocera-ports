@@ -103,19 +103,31 @@ namespace emulatorLauncher
                         return Path.Combine(Path.GetFullPath(Path.Combine(Program.LocalPath, "..", key)));
                 }
                 else
-                {
+                {                  
                     if (Directory.Exists(Path.GetFullPath(Path.Combine(Program.LocalPath, key))))
                         return Path.Combine(Path.GetFullPath(Path.Combine(Program.LocalPath, key))); 
                     
                     if (Directory.Exists(Path.GetFullPath(Path.Combine(Program.LocalPath, "..", "emulators", key))))
                         return Path.Combine(Path.GetFullPath(Path.Combine(Program.LocalPath, "..", "emulators", key)));
+
+                    if (Directory.Exists(Path.GetFullPath(Path.Combine(Program.LocalPath, "..", "system", "emulators", key))))
+                        return Path.Combine(Path.GetFullPath(Path.Combine(Program.LocalPath, "..", "system", "emulators", key)));
                 }
                 
                 return string.Empty;
             }
 
-            if (data.StartsWith("."))
-                return Path.GetFullPath(Path.Combine(Program.LocalPath, data));
+            if (data.Contains(":")) // drive letter -> Full path
+                return data;
+
+            if (Directory.Exists(Path.GetFullPath(Path.Combine(Program.LocalPath, data))))
+                return Path.Combine(Path.GetFullPath(Path.Combine(Program.LocalPath, data)));
+
+            if (Directory.Exists(Path.GetFullPath(Path.Combine(Program.LocalPath, "..", "emulators", data))))
+                return Path.Combine(Path.GetFullPath(Path.Combine(Program.LocalPath, "..", "emulators", data)));
+
+            if (Directory.Exists(Path.GetFullPath(Path.Combine(Program.LocalPath, "..", "system", "emulators", data))))
+                return Path.Combine(Path.GetFullPath(Path.Combine(Program.LocalPath, "..", "system", "emulators", data)));
 
             return data;
         }

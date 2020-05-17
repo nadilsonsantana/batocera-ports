@@ -11,11 +11,25 @@ namespace emulatorLauncher
     {
         public override System.Diagnostics.ProcessStartInfo Generate(string system, string emulator, string core, string rom, string playersControllers, ScreenResolution resolution)
         {
-            string path = AppConfig.GetFullPath("dolphin");
+            string folderName = (emulator == "dolphin-triforce" || core == "dolphin-triforce") ? "dolphin-triforce" : "dolphin";
+
+            string path = AppConfig.GetFullPath(folderName);
+            if (string.IsNullOrEmpty(path))
+                path = AppConfig.GetFullPath("dolphin");
+
+            if (string.IsNullOrEmpty(path))
+                path = AppConfig.GetFullPath("dolphin-emu");
 
             string exe = Path.Combine(path, "Dolphin.exe");
             if (!File.Exists(exe))
+                exe = Path.Combine(path, "DolphinWX.exe");
+
+            if (!File.Exists(exe))
                 return null;
+
+            string portableFile = Path.Combine(path, "portable.txt");
+            if (!File.Exists(portableFile))
+                File.WriteAllText(portableFile, "");
 
             SetupGeneralConfig(path, system);
             SetupGfxConfig(path);
@@ -102,6 +116,8 @@ namespace emulatorLauncher
             {
                 using (var ini = new IniFile(iniFile, true))
                 {
+                    ini.WriteValue("Display", "Fullscreen", "True");
+
                     // draw or not FPS
                     if (SystemConfig.isOptSet("DrawFramerate") && SystemConfig.getOptBoolean("DrawFramerate"))
                     {
