@@ -30,6 +30,7 @@ namespace emulatorLauncher
         static Dictionary<string, Func<Generator>> generators = new Dictionary<string, Func<Generator>>
         {
             { "libretro", () => new LibRetroGenerator() },
+            { "retroarch", () => new LibRetroGenerator() },
             { "model2", () => new Model2Generator() },
             { "model3", () => new Model3Generator() }, { "supermodel", () => new Model3Generator() },
             { "openbor", () => new OpenBorGenerator() },
