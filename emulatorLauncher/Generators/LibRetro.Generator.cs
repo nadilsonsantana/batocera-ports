@@ -91,7 +91,7 @@ namespace emulatorLauncher.libRetro
                 coreSettings.Save(Path.Combine(RetroarchPath, "retroarch-core-options.cfg"), true);
         }
 
-        private void Configure(string system, string rom, ScreenResolution resolution)
+        private void Configure(string system, string core, string rom, ScreenResolution resolution)
         {
             var retroarchConfig = ConfigFile.FromFile(Path.Combine(RetroarchPath, "retroarch.cfg"));
 
@@ -191,7 +191,10 @@ namespace emulatorLauncher.libRetro
                 if (SystemConfig["core"] == "tgbdual")
                     retroarchConfig["aspect_ratio_index"] = ratioIndexes.IndexOf("core").ToString();
 
-                retroarchConfig["aspect_ratio_index"] = "";
+                if (system == "wii")
+                    retroarchConfig["aspect_ratio_index"] = "22";
+                else
+                    retroarchConfig["aspect_ratio_index"] = "";
             }
 
             if (SystemConfig["core"] == "cap32")
@@ -343,9 +346,18 @@ namespace emulatorLauncher.libRetro
                 if (user_config.Name.StartsWith("retroarch."))
                     retroarchConfig[user_config.Name.Substring("retroarch.".Length)] = user_config.Value;
 
+
+            if (core == "dolphin" && retroarchConfig["video_driver"] != "d3d11")
+            {
+                _video_driver = retroarchConfig["video_driver"];
+                retroarchConfig["video_driver"] = "d3d11";
+            }
+
             if (retroarchConfig.IsDirty)
                 retroarchConfig.Save(Path.Combine(RetroarchPath, "retroarch.cfg"), true);
         }
+
+        private string _video_driver;
 
         private void writeBezelConfig(ConfigFile retroarchConfig, string systemName, string rom, ScreenResolution resolution)
         {
@@ -361,6 +373,9 @@ namespace emulatorLauncher.libRetro
             retroarchConfig["video_message_pos_y"] = "0.05";
 
             if (string.IsNullOrEmpty(bezel) || bezel == "none")
+                return;
+
+            if (systemName == "wii")
                 return;
 
             string romBase = Path.GetFileNameWithoutExtension(rom);
@@ -424,6 +439,13 @@ namespace emulatorLauncher.libRetro
         {
             if (_dosBoxTempRom != null && File.Exists(_dosBoxTempRom))
                 File.Delete(_dosBoxTempRom);
+            
+            if (!string.IsNullOrEmpty(_video_driver))
+            {
+                var retroarchConfig = ConfigFile.FromFile(Path.Combine(RetroarchPath, "retroarch.cfg"));
+                retroarchConfig["video_driver"] = _video_driver;
+                retroarchConfig.Save(Path.Combine(RetroarchPath, "retroarch.cfg"), true);
+            }                
 
             base.Cleanup();
         }
@@ -471,11 +493,10 @@ namespace emulatorLauncher.libRetro
                 }
             }
 
-            Configure(system, rom, resolution);
+            Configure(system, core, rom, resolution);
             ConfigureCoreOptions(system, core);
 
             List<string> commandArray = new List<string>();
-
 
             string subSystem = SubSystem.GetSubSystem(core, system);
             if (!string.IsNullOrEmpty(subSystem))
@@ -529,8 +550,8 @@ namespace emulatorLauncher.libRetro
             "segacd", "sega32x", "saturn", "pcengine", "pcenginecd", "supergrafx", "psx", "mame", "fbneo", "neogeo", "lightgun", "apple2", 
             "lynx", "wswan", "wswanc", "gb", "gbc", "gba", "nds", "pokemini", "gamegear", "ngp", "ngpc"};
 
-        static List<string> systemNoRewind = new List<string>() { "sega32x", "psx", "zxspectrum", "odyssey2", "n64", "dreamcast", "atomiswave", "naomi", "neogeocd", "saturn", "mame", "fbneo" };
-        static List<string> systemNoRunahead = new List<string>() { "sega32x", "n64", "dreamcast", "atomiswave", "naomi", "neogeocd", "saturn" };
+        static List<string> systemNoRewind = new List<string>() { "sega32x", "wii", "gamecube", "gc", "psx", "zxspectrum", "odyssey2", "n64", "dreamcast", "atomiswave", "naomi", "neogeocd", "saturn", "mame", "fbneo" };
+        static List<string> systemNoRunahead = new List<string>() { "sega32x", "wii", "gamecube", "n64", "dreamcast", "atomiswave", "naomi", "neogeocd", "saturn" };
 
         static Dictionary<string, string> systemToP1Device = new Dictionary<string, string>() { { "msx", "257" }, { "msx1", "257" }, { "msx2", "257" }, { "colecovision", "1" } };
         static Dictionary<string, string> systemToP2Device = new Dictionary<string, string>() { { "msx", "257" }, { "msx1", "257" }, { "msx2", "257" }, { "colecovision", "1" } };
