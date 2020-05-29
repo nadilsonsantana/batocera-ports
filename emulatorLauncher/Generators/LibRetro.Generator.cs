@@ -346,8 +346,12 @@ namespace emulatorLauncher.libRetro
                 if (user_config.Name.StartsWith("retroarch."))
                     retroarchConfig[user_config.Name.Substring("retroarch.".Length)] = user_config.Value;
 
-
-            if (core == "dolphin" && retroarchConfig["video_driver"] != "d3d11")
+            if (SystemConfig.isOptSet("video_driver"))
+            {
+                _video_driver = retroarchConfig["video_driver"];
+                retroarchConfig["video_driver"] = SystemConfig["video_driver"];
+            }
+            else if (core == "dolphin" && retroarchConfig["video_driver"] != "d3d11" && retroarchConfig["video_driver"] != "vulkan")
             {
                 _video_driver = retroarchConfig["video_driver"];
                 retroarchConfig["video_driver"] = "d3d11";
@@ -361,9 +365,13 @@ namespace emulatorLauncher.libRetro
 
         private void writeBezelConfig(ConfigFile retroarchConfig, string systemName, string rom, ScreenResolution resolution)
         {
-            string path = AppConfig.GetFullPath("decorations");
+            string overlayUser = AppConfig.GetFullPath("decorations");
 
-            string bezel = Directory.Exists(path) && !string.IsNullOrEmpty(SystemConfig["bezel"]) ? SystemConfig["bezel"] : "default";
+            string overlaySystem = AppConfig.GetFullPath("system.decorations");
+            if (string.IsNullOrEmpty(overlaySystem) || !Directory.Exists(overlaySystem))
+                overlaySystem = Path.Combine(AppConfig.GetFullPath("home"), "decorations");
+
+            string bezel = Directory.Exists(overlayUser) && !string.IsNullOrEmpty(SystemConfig["bezel"]) ? SystemConfig["bezel"] : "default";
             if (SystemConfig.isOptSet("forceNoBezel") && SystemConfig.getOptBoolean("forceNoBezel"))
                 bezel = null;
 
@@ -380,42 +388,66 @@ namespace emulatorLauncher.libRetro
 
             string romBase = Path.GetFileNameWithoutExtension(rom);
 
-            string overlay_info_file = path + "/" + bezel + "/games/" + systemName + "/" + romBase + ".info";
-            string overlay_png_file = path + "/" + bezel + "/games/" + systemName + "/" + romBase + ".png";
+            string overlay_info_file = overlayUser + "/" + bezel + "/games/" + systemName + "/" + romBase + ".info";
+            string overlay_png_file = overlayUser + "/" + bezel + "/games/" + systemName + "/" + romBase + ".png";
+
+            if (!File.Exists(overlay_png_file) && !string.IsNullOrEmpty(overlaySystem))
+            {
+                overlay_info_file = overlaySystem + "/" + bezel + "/games/" + systemName + "/" + romBase + ".info";
+                overlay_png_file = overlaySystem + "/" + bezel + "/games/" + systemName + "/" + romBase + ".png";
+            }
 
             if (!File.Exists(overlay_png_file))
             {
-                overlay_info_file = path + "/" + bezel + "/games/" + systemName + "/" + romBase + ".info";
-                overlay_png_file = path + "/" + bezel + "/games/" + systemName + "/" + romBase + ".png";
-
-                if (!File.Exists(overlay_png_file))
-                {
-                    overlay_info_file = path + "/" + bezel + "/games/" + romBase + ".info";
-                    overlay_png_file = path + "/" + bezel + "/games/" + romBase + ".png";
-                }
-
-                if (!File.Exists(overlay_png_file))
-                {
-                    overlay_info_file = path + "/" + bezel + "/systems/" + systemName + ".info";
-                    overlay_png_file = path + "/" + bezel + "/systems/" + systemName + ".png";
-                }
-
-                if (!File.Exists(overlay_png_file))
-                {
-                    overlay_info_file = path + "/" + bezel + "/default.info";
-                    overlay_png_file = path + "/" + bezel + "/default.png";
-                }
-
-                if (!File.Exists(overlay_png_file))
-                {
-                    overlay_info_file = path + "/default/systems/" + systemName + ".info";
-                    overlay_png_file = path + "/default/systems/" + systemName + ".png";
-                }
-
-                if (!File.Exists(overlay_png_file))
-                    return;
+                overlay_info_file = overlayUser + "/" + bezel + "/games/" + romBase + ".info";
+                overlay_png_file = overlayUser + "/" + bezel + "/games/" + romBase + ".png";
             }
 
+            if (!string.IsNullOrEmpty(overlaySystem) && !File.Exists(overlay_png_file))
+            {
+                overlay_info_file = overlaySystem + "/" + bezel + "/games/" + romBase + ".info";
+                overlay_png_file = overlaySystem + "/" + bezel + "/games/" + romBase + ".png";
+            }
+
+            if (!File.Exists(overlay_png_file))
+            {
+                overlay_info_file = overlayUser + "/" + bezel + "/systems/" + systemName + ".info";
+                overlay_png_file = overlayUser + "/" + bezel + "/systems/" + systemName + ".png";
+            }
+
+            if (!string.IsNullOrEmpty(overlaySystem) && !File.Exists(overlay_png_file))
+            {
+                overlay_info_file = overlaySystem + "/" + bezel + "/systems/" + systemName + ".info";
+                overlay_png_file = overlaySystem + "/" + bezel + "/systems/" + systemName + ".png";
+            }
+
+            if (!File.Exists(overlay_png_file))
+            {
+                overlay_info_file = overlayUser + "/" + bezel + "/default.info";
+                overlay_png_file = overlayUser + "/" + bezel + "/default.png";
+            }
+
+            if (!string.IsNullOrEmpty(overlaySystem) && !File.Exists(overlay_png_file))
+            {
+                overlay_info_file = overlaySystem + "/" + bezel + "/default.info";
+                overlay_png_file = overlaySystem + "/" + bezel + "/default.png";
+            }
+
+            if (!File.Exists(overlay_png_file))
+            {
+                overlay_info_file = overlayUser + "/default/systems/" + systemName + ".info";
+                overlay_png_file = overlayUser + "/default/systems/" + systemName + ".png";
+            }
+
+            if (!string.IsNullOrEmpty(overlaySystem) && !File.Exists(overlay_png_file))
+            {
+                overlay_info_file = overlaySystem + "/default/systems/" + systemName + ".info";
+                overlay_png_file = overlaySystem + "/default/systems/" + systemName + ".png";
+            }
+
+            if (!File.Exists(overlay_png_file))
+                return;
+            
             string overlay_cfg_file = Path.Combine(RetroarchPath, "custom-overlay.cfg");
 
             retroarchConfig["input_overlay_enable"] = "true";
@@ -456,7 +488,16 @@ namespace emulatorLauncher.libRetro
                 return null;
 
             if (Path.GetExtension(rom).ToLowerInvariant() == ".libretro")
+            {
                 core = Path.GetFileNameWithoutExtension(rom);
+
+                if (core == "xrick")
+                    rom = Path.Combine(Path.GetDirectoryName(rom), "xrick", "data.zip");
+                else if (core == "dinothawr")
+                    rom = Path.Combine(Path.GetDirectoryName(rom), "dinothawr", "dinothawr.game");
+                else
+                    rom = null;
+            }
 
             if (core != null && core.IndexOf("dosbox", StringComparison.InvariantCultureIgnoreCase) >= 0)
             {
@@ -536,7 +577,7 @@ namespace emulatorLauncher.libRetro
                 FileName = Path.Combine(RetroarchPath, "retroarch.exe"),
                 WorkingDirectory = RetroarchPath,                
                 Arguments =
-                    Path.GetExtension(rom).ToLowerInvariant() == ".libretro" ?
+                    string.IsNullOrEmpty(rom) ?
                         ("-L \"" + Path.Combine(RetroarchCorePath, core + "_libretro.dll") + "\" " + args).Trim() :
                         ("-L \"" + Path.Combine(RetroarchCorePath, core + "_libretro.dll") + "\" \"" + rom + "\" " + args).Trim()
             };
@@ -550,8 +591,8 @@ namespace emulatorLauncher.libRetro
             "segacd", "sega32x", "saturn", "pcengine", "pcenginecd", "supergrafx", "psx", "mame", "fbneo", "neogeo", "lightgun", "apple2", 
             "lynx", "wswan", "wswanc", "gb", "gbc", "gba", "nds", "pokemini", "gamegear", "ngp", "ngpc"};
 
-        static List<string> systemNoRewind = new List<string>() { "sega32x", "wii", "gamecube", "gc", "psx", "zxspectrum", "odyssey2", "n64", "dreamcast", "atomiswave", "naomi", "neogeocd", "saturn", "mame", "fbneo" };
-        static List<string> systemNoRunahead = new List<string>() { "sega32x", "wii", "gamecube", "n64", "dreamcast", "atomiswave", "naomi", "neogeocd", "saturn" };
+        static List<string> systemNoRewind = new List<string>() { "3ds", "sega32x", "wii", "gamecube", "gc", "psx", "zxspectrum", "odyssey2", "n64", "dreamcast", "atomiswave", "naomi", "neogeocd", "saturn", "mame", "fbneo" };
+        static List<string> systemNoRunahead = new List<string>() { "3ds", "sega32x", "wii", "gamecube", "n64", "dreamcast", "atomiswave", "naomi", "neogeocd", "saturn" };
 
         static Dictionary<string, string> systemToP1Device = new Dictionary<string, string>() { { "msx", "257" }, { "msx1", "257" }, { "msx2", "257" }, { "colecovision", "1" } };
         static Dictionary<string, string> systemToP2Device = new Dictionary<string, string>() { { "msx", "257" }, { "msx1", "257" }, { "msx2", "257" }, { "colecovision", "1" } };
