@@ -259,92 +259,34 @@ namespace emulatorLauncher.Tools
 
             if (input.Type == "key")
                 return input;
+            
+            var mapping = SdlGameControllers.GetGameControllerMapping(ProductGuid);
+            if (mapping == null)
+                return input;
+            
+            var sdlret = mapping.FirstOrDefault(m => m.Input.Type == input.Type && m.Input.Value == input.Value && m.Input.Id == input.Id);
+            if (sdlret == null)
+                return input;
 
-            Input ret = new Input();
-            ret.Name = input.Name;
-            ret.Type = input.Type;
-            ret.Id = input.Id;
-            ret.Value = input.Value;
-            ret.Type = "button";
-            ret.Value = 1;
-
-            if (IsXInputDevice())
+            Input ret = new Input() { Name = input.Name };
+           
+            if (sdlret.Button != SDL_CONTROLLER_BUTTON.INVALID)
             {
-                if (input.Type == "button")
-                {
-                    XINPUT_GAMEPAD xButton = (XINPUT_GAMEPAD)input.Id;
-
-                    SDL_CONTROLLER_BUTTON btn;
-                    if (!Enum.TryParse(xButton.ToString(), out btn))
-                        return input;
-
-                    ret.Type = "button";
-                    ret.Id = (int)btn;
-                    ret.Value = 1;
-                    return ret;
-                }
-
-                if (input.Type == "hat")
-                {
-                    XINPUT_HATS xButton = (XINPUT_HATS)input.Value;
-
-                    SDL_CONTROLLER_BUTTON btn;
-                    if (!Enum.TryParse(xButton.ToString(), out btn))
-                        return input;
-
-                    ret.Type = "button";
-                    ret.Id = (int)btn;
-                    ret.Value = 1;
-                    return ret;
-                }
-
-                if (input.Type == "axis")
-                {
-                    ret.Value = input.Value;
-                    ret.Type = "axis";                    
-
-                    if (ret.Id == 3 || ret.Id == 4) // Analog right
-                        ret.Id--;
-                    else if (ret.Id == 2) // L2
-                        ret.Id = 4;
-
-                    return ret;
-                }
+                ret.Type = "button";
+                ret.Value = 1;
+                ret.Id = (int)sdlret.Button;
+                return ret;
             }
             
-            switch(key)
+            if (sdlret.Axis != SDL_CONTROLLER_AXIS.INVALID)
             {
-                case InputKey.a:
-                    ret.Id = (int)SDL_CONTROLLER_BUTTON.A; break;
-                case InputKey.b:
-                    ret.Id = (int)SDL_CONTROLLER_BUTTON.B; break;
-                case InputKey.x:
-                    ret.Id = (int)SDL_CONTROLLER_BUTTON.X; break;
-                case InputKey.y:
-                    ret.Id = (int)SDL_CONTROLLER_BUTTON.Y; break;
-                case InputKey.start:
-                    ret.Id = (int)SDL_CONTROLLER_BUTTON.START; break;
-                case InputKey.select:
-                    ret.Id = (int)SDL_CONTROLLER_BUTTON.BACK; break;
-                case InputKey.hotkey:
-                    ret.Id = (int)SDL_CONTROLLER_BUTTON.BACK; break; // GUIDE 
-                case InputKey.up:
-                    ret.Id = (int)SDL_CONTROLLER_BUTTON.DPAD_UP; break;
-                case InputKey.down:
-                    ret.Id = (int)SDL_CONTROLLER_BUTTON.DPAD_DOWN; break;
-                case InputKey.left:
-                    ret.Id = (int)SDL_CONTROLLER_BUTTON.DPAD_LEFT; break;
-                case InputKey.right:
-                    ret.Id = (int)SDL_CONTROLLER_BUTTON.DPAD_RIGHT; break;
-                case InputKey.pagedown:
-                    ret.Id = (int)SDL_CONTROLLER_BUTTON.LEFTSHOULDER; break;
-                case InputKey.pageup:
-                    ret.Id = (int)SDL_CONTROLLER_BUTTON.RIGHTSHOULDER; break;
-                default:
-                    return ToXInputCodes(key);
+                ret.Type = "axis";
+                ret.Id = (int)sdlret.Axis;
+                ret.Value = 1;
+                return ret;
             }
-                      
-            return ret;
+
+            return ToXInputCodes(key);
         }
 
         /// <summary>
@@ -472,7 +414,8 @@ namespace emulatorLauncher.Tools
         {
             StringBuilder sb = new StringBuilder();
                    
-            sb.Append(" name:" + Name);
+            if ((int) Name != 0)
+                sb.Append(" name:" + Name);
 
             if (Type != null)
                 sb.Append(" type:" + Type);
@@ -613,6 +556,8 @@ namespace emulatorLauncher.Tools
 
     enum SDL_CONTROLLER_BUTTON
     {
+        INVALID = -1,
+
         A = 0,
         B = 1,
         X = 2,
@@ -628,5 +573,18 @@ namespace emulatorLauncher.Tools
         DPAD_DOWN = 12,
         DPAD_LEFT = 13,
         DPAD_RIGHT = 14
-    };    
+    };
+
+    enum SDL_CONTROLLER_AXIS
+    {
+        INVALID = -1,
+
+        LEFTX = 0,
+        LEFTY = 1,
+        RIGHTX = 2,
+        RIGHTY = 3,
+        TRIGGERLEFT = 4,
+        TRIGGERRIGHT = 5
+    }
+
 }
