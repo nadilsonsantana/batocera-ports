@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,8 +22,19 @@ namespace emulatorLauncher
             {
                 FileName = exe,
                 WorkingDirectory = path,
-                Arguments = "-nogui -loadbin \"" + rom + "\"",                
+                Arguments = biosFile(core) + " -nogui -loadbin \"" + rom + "\"",
             };
+        }
+
+        private string biosFile(string core)
+        {
+            string biosPath = Path.Combine(Program.AppConfig.GetFullPath("home"), "bios");
+            string bin = Path.Combine(biosPath, core + ".BIN");
+            if (File.Exists(bin))
+            {
+                return "-bios " + bin;
+            }
+            return "";
         }
     }
 }
