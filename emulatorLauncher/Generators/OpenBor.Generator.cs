@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -184,6 +184,7 @@ namespace emulatorLauncher
         #region Ini file
         private void setupControllers(ConfigFile ini)
         {
+            return;
             if (Program.SystemConfig.isOptSet("disableautocontrollers") && Program.SystemConfig["disableautocontrollers"] == "1")
                 return;
 
@@ -341,6 +342,7 @@ namespace emulatorLauncher
         #region bor.cfg
         private void setupControllersCfg(savedata conf)
         {
+            return;
             if (Program.SystemConfig.isOptSet("disableautocontrollers") && Program.SystemConfig["disableautocontrollers"] == "1")
                 return;
 
