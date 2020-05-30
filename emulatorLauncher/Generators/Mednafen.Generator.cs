@@ -13,6 +13,11 @@ namespace emulatorLauncher
         {
             string path = AppConfig.GetFullPath("mednafen");
 
+            if (!Environment.Is64BitOperatingSystem)
+            {
+                path = AppConfig.GetFullPath("mednafen32");
+            }
+
             string exe = Path.Combine(path, "mednafen.exe");
             if (!File.Exists(exe))
                 return null;
